@@ -18,10 +18,10 @@ Registro registro; // é a mesma variável global do codigo dele, mas para o reg
 
 void *escritor(void*t){
     long tid = (long)t;
-    printf("thread %dl de escrita lenda a nota\n", tid);
+    printf("thread %ld de escrita lenda a nota\n", tid);
     sleep(2);
     int notaAtual = registro.nota;
-    printf("thread &ld de escrita leu a nota %d\n", tid, notaAtual);
+    printf("thread %ld de escrita leu a nota %d\n", tid, notaAtual);
     int notaAtualizada = notaAtual + 10;
     printf("thread %ld de escrita leu a nota atualizada %d\n", tid, notaAtualizada);
     sleep(3);

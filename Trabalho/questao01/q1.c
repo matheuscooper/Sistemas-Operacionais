@@ -26,17 +26,16 @@ void *leitor(void *t){
 }
 
 void *escritor(void *t){
-    int notaAtual;
     long tid = (long)t;
     printf("Thread %ld de escrita lendo a maldita nota...\n", tid);
     sleep(2);
-    notaAtualizada = registro.nota;
+    int notaAtual = registro.nota;
     printf("Thread %ld leu a nota do arrombado = %d\n", tid, notaAtual);
     // agora precisa assim como no código da simulação de saldo do banco, fazer uma atualizaçao do valor
-    int notaAtualizada = notaAtual + 8
-    printf("Thread %ld de escrita atualizou a nota = %d\n", tid, notaAtualizada);
+    int nota_atualizada = notaAtual + 8;
+    printf("Thread %ld de escrita atualizou a nota = %d\n", tid, nota_atualizada);
     sleep(3); // simulação de tempo de escrita de registro
-    registro.nota = notaAtualizada; 
+    registro.nota = nota_atualizada; 
     printf("Thread %ld atualizou a nota para = %d\n", tid, registro.nota);
     printf("Thread %ld done.\n", tid);
     pthread_exit(NULL);
