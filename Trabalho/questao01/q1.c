@@ -62,7 +62,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Espera as threads terminarem
     for(t = 0; t < NUM_THREADS; t++) {
         pthread_join(thread[t], NULL);
     }

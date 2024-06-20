@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
     int rc;
     long t;
 
-    // inicializa o registro
+    // inicia os registro
     registro.nota = 50;
 
     // inicializa mutex e variáveis de condição
@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Espera as threads terminarem
+
     for (t = 0; t < NUM_THREADS; t++) {
         pthread_join(thread[t], NULL);
     }
