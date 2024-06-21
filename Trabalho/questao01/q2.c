@@ -23,12 +23,12 @@ pthread_cond_t condEscritores; // variaveis para as condições tanto para leito
 int leitoresAtivos = 0;
 int escritoresAtivos = 0;
 // isso aqui é para dar prioridade para os escritores em relação aos leitores
-int threadEscritores = 0;
+int threadEscritores = 0; /// acho que não preciso disso aqui
 
 void *leitor(void *t){
     long tid = (long)t;
     pthread_mutex_lock(&mutexLeitor); 
-    while( escritoresAtivos > 0 || threadEscritores > 0){
+    while( escritoresAtivos > 0 ){
         pthread_cond_wait(&condLeitores, &mutexLeitor); // bloqueia o acesso por outro fio ao mutex, e em seguida, a variável de condição.
     }
     leitoresAtivos++;
@@ -54,11 +54,10 @@ void *leitor(void *t){
 void *escritor(void*t){
     long tid = (long)t;
     pthread_mutex_lock(&mutexLeitor); // bloqueio os leitores 
-    threadEscritores++; // aumenta o numero de threads esperando para escrever, como um leitor acabou de ler, então eu preciso verificar se tem escritores esperando, aí eu sinalizo para os escritores
-    while( leitoresAtivos > 0 || escritoresAtivos > 0){
+    ///threadEscritores++; // aumenta o numero de threads esperando para escrever, como um leitor acabou de ler, então eu preciso verificar se tem escritores esperando, aí eu sinalizo para os escritores
+    while( leitoresAtivos > 0 ){
         pthread_cond_wait(&condEscritores, &mutexLeitor); 
     }
-    threadEscritores--;
     escritoresAtivos++;
     pthread_mutex_unlock(&mutexLeitor);
 
@@ -77,11 +76,11 @@ void *escritor(void*t){
     /// mas preciso saber se nao tem escritores esperando, se houver eu bloqueiou a condição dos escritores 
     pthread_mutex_lock(&mutexLeitor);
     escritoresAtivos--;
-    if( threadEscritores > 0){
+    if( escritoresAtivos > 0){
         pthread_cond_signal(&condEscritores);
     }
     else{
-        pthread_cond_broadcast(&condLeitores); //desbloqueia todos os leitores que estava
+        pthread_cond_broadcast(&condLeitores); //desbloqueia todos os leitores que estavam bloqueados
     }
     pthread_mutex_unlock(&mutexLeitor);
     pthread_exit(NULL);
@@ -105,8 +104,8 @@ int main(int argc, char *argv[]) {
 
     for (t = 0; t < NUM_THREADS; t++) {
         printf("Main: criando as thread %ld\n", t);
-        if (t % 2 == 0) {
-            rc = pthread_create(&thread[t], NULL, escritor, (void *)t);
+        if (t % 2 == 0) { 
+            rc = pthread_create(&thread[t], NULL, escritor, (void *)t); // Threads pares são escritores, enquanto as impares sao leitoras
         } else {
             rc = pthread_create(&thread[t], NULL, leitor, (void *)t);
         }

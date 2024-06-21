@@ -12,21 +12,39 @@ typedef struct Registro
     int nota;
 } Registro;
 
-Registro registro; // é a mesma variável global do codigo dele, mas para o registro das notas 
+Registro registro;
+ // é a mesma variável global do codigo dele, mas para o registro das notas 
+pthread_mutex_t mutexLeitor; 
+pthread_cond_t condLeitores;
+pthread_cond_t condEscritores; // variaveis para as condições tanto para leitores como escritores e sincronizar as threads
+
+// tanto número de leitores ativos como escritores ativos, então preciso saber quando há letoires e escritores ativos de modo que os leitores acessem os dados
+int leitoresAtivos = 0;
+int escritoresAtivos = 0;
+// isso aqui é para dar prioridade para os escritores em relação aos leitores
 
 void *leitor(void *t){
     int notaLida;
     long tid = (long)t;
+    //leitoresAtivos++;
+    pthread_mutex_lock(&mutexLeitor);
+    if(leitoresAtivos < escritoresAtivos ){pthread_cond_wait(&condEscritores,&mutexLeitor); }
+    
     printf("Thread %ld de leitura lendo a nota...\n", tid);
     sleep(2);
     notaLida = registro.nota;
     printf("Thread %ld leu a nota = %d\n", tid, notaLida);
     printf("Thread %ld acabou\n", tid);
+    pthread_mutex_unlock(&mutexLeitor);
+    pthread_cond_broadcast(&condLeitores); 
     pthread_exit(NULL); // aqui ele fecha a thread
 }
 
 void *escritor(void *t){
     long tid = (long)t;
+    //escritoresAtivos++;
+    pthread_mutex_lock(&mutexLeitor);
+    if(escritoresAtivos < leitoresAtivos ){pthread_cond_wait(&condLeitores,&mutexLeitor); }
     printf("Thread %ld de escrita lendo a maldita nota...\n", tid);
     sleep(2);
     int notaAtual = registro.nota;
@@ -38,6 +56,8 @@ void *escritor(void *t){
     registro.nota = nota_atualizada; 
     printf("Thread %ld atualizou a nota para = %d\n", tid, registro.nota);
     printf("Thread %ld done.\n", tid);
+    pthread_mutex_unlock(&mutexLeitor);
+    pthread_cond_broadcast(&condEscritores); 
     pthread_exit(NULL);
 }
 
