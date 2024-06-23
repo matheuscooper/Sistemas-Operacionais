@@ -38,7 +38,7 @@ void *leitor(void *t){
     sleep(2); 
     int notaLida = registro.nota;
     printf("Thread %ld de leitura leu a nota %d\n", tid, notaLida);
-    printf("Thread %ld acabou :)", tid);
+    printf("Thread %ld de leitura acabou :)\n", tid);
 
     // se ele leu e não tem mais leitores significa que os escritores podem ter acesso 
     pthread_mutex_lock(&mutexLeitor);
@@ -67,10 +67,10 @@ void *escritor(void*t){
     printf("thread %ld de escrita leu a nota %d\n", tid, notaAtual);
     int notaAtualizada = notaAtual + 6;
     printf("thread %ld de escrita leu a nota atualizada %d\n", tid, notaAtualizada);
-    sleep(3);
+    usleep(3);
     registro.nota = notaAtualizada; // aqui eu atualizo a nota no registro
-    printf("thread %ld atualizou a nota para %d\n", tid, registro.nota);
-    printf("Thread %ld acabou\n", tid);
+    printf("thread %ld de escrita atualizou a nota no registro para %d\n", tid, registro.nota);
+    printf("Thread %ld de escrita acabou\n", tid);
 
     // bloqueio os leitores novamente e decremento o numero de escritores ativos para ativar a condição dos leitores a fim de que eles leiam agora - 
     /// mas preciso saber se nao tem escritores esperando, se houver eu bloqueiou a condição dos escritores 
@@ -102,13 +102,22 @@ int main(int argc, char *argv[]) {
     pthread_cond_init(&condLeitores, NULL);
     pthread_cond_init(&condEscritores, NULL);
 
-    for (t = 0; t < NUM_THREADS; t++) {
-        printf("Main: criando as thread %ld\n", t);
-        if (t % 2 == 0) { 
-            rc = pthread_create(&thread[t], NULL, escritor, (void *)t); // Threads pares são escritores, enquanto as impares sao leitoras
-        } else {
+    int readThread = 0;
+    int writerThreads = 0;
+    int maxThreadsPerOperation = NUM_THREADS / 2;
+
+    for(t = 0; t < NUM_THREADS; t++) {
+        if (((rand() % 2 == 0 && readThread < maxThreadsPerOperation)) || writerThreads >= maxThreadsPerOperation){
             rc = pthread_create(&thread[t], NULL, leitor, (void *)t);
-        }
+            printf("Main: criando a thread leitora %ld\n", t);
+            readThread++;
+        }  
+        else{
+            rc = pthread_create(&thread[t], NULL, escritor, (void *)t);
+            printf("Main: criando a thread escritora %ld\n", t);
+            writerThreads++;
+            
+        }  
         if (rc) {
             printf("ERROR; return code from pthread_create() is %d\n", rc);
             exit(-1);

@@ -33,10 +33,10 @@ void *leitor(void *t){
     printf("Thread %ld de leitura lendo a nota...\n", tid);
     sleep(2);
     notaLida = registro.nota;
-    printf("Thread %ld leu a nota = %d\n", tid, notaLida);
-    printf("Thread %ld acabou\n", tid);
+    printf("Thread %ld de leitura leu a nota = %d\n", tid, notaLida);
+    printf("Thread %ld de leitura acabou\n", tid);
     pthread_mutex_unlock(&mutexLeitor);
-    pthread_cond_broadcast(&condLeitores); 
+    pthread_cond_broadcast(&condEscritores); 
     pthread_exit(NULL); // aqui ele fecha a thread
 }
 
@@ -45,19 +45,19 @@ void *escritor(void *t){
     //escritoresAtivos++;
     pthread_mutex_lock(&mutexLeitor);
     if(escritoresAtivos < leitoresAtivos ){pthread_cond_wait(&condLeitores,&mutexLeitor); }
-    printf("Thread %ld de escrita lendo a maldita nota...\n", tid);
+    printf("Thread %ld de escrita aguardando para escrita...\n", tid);
     sleep(2);
     int notaAtual = registro.nota;
-    printf("Thread %ld leu a nota do arrombado = %d\n", tid, notaAtual);
+    printf("Thread %ld de escrita leu a nota = %d\n", tid, notaAtual);
     // agora precisa assim como no código da simulação de saldo do banco, fazer uma atualizaçao do valor
     int nota_atualizada = notaAtual + 8;
     printf("Thread %ld de escrita atualizou a nota = %d\n", tid, nota_atualizada);
     sleep(3); // simulação de tempo de escrita de registro
     registro.nota = nota_atualizada; 
-    printf("Thread %ld atualizou a nota para = %d\n", tid, registro.nota);
-    printf("Thread %ld done.\n", tid);
+    printf("Thread %ld de escrita atualizou a nota no regitro para = %d\n", tid, registro.nota);
+    printf("Thread %ld de escrita acabou.\n", tid);
     pthread_mutex_unlock(&mutexLeitor);
-    pthread_cond_broadcast(&condEscritores); 
+    pthread_cond_broadcast(&condLeitores); 
     pthread_exit(NULL);
 }
 
@@ -69,12 +69,22 @@ int main(int argc, char *argv[]) {
     // iniciando os registros
     registro.nota = 50;
 
+    int readThread = 0;
+    int writerThreads = 0;
+    int maxThreadsPerOperation = NUM_THREADS / 2;
+
     for(t = 0; t < NUM_THREADS; t++) {
-        printf("Main: criando as thread %ld\n", t);
-        if (t % 2 == 0)
-            rc = pthread_create(&thread[t], NULL, escritor, (void *)t);
-        else
+        if (((rand() % 2 == 0 && readThread < maxThreadsPerOperation)) || writerThreads >= maxThreadsPerOperation){
             rc = pthread_create(&thread[t], NULL, leitor, (void *)t);
+            printf("Main: criando a thread leitora %ld\n", t);
+            readThread++;
+        }  
+        else{
+            rc = pthread_create(&thread[t], NULL, escritor, (void *)t);
+            printf("Main: criando a thread escritora %ld\n", t);
+            writerThreads++;
+            
+        }  
         if (rc) {
             printf("ERROR; return code from pthread_create() is %d\n", rc);
             exit(-1);
