@@ -18,18 +18,24 @@ typedef struct Registro {
 Registro registro;
 
 sem_t writer;
-int reader_count = 0;
-pthread_mutex_t reader_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex; 
+pthread_cond_t withoutWriter;
+
+int writers = NUM_THREADS/2;
 
 void *leitor(void *t) {
     long tid = (long)t;
 
-
+    pthread_mutex_lock(&mutex);
+    while (writers != NUM_THREADS/2)
+    {
+        pthread_cond_wait(&withoutWriter, &mutex);
+    }
+    pthread_mutex_unlock(&mutex);
+    
     printf("Thread %ld de leitura lendo a nota\n", tid);
-    usleep(rand() % 1000 );
-    sem_wait(&writer);
     int notaLida = registro.nota;
-    sem_post(&writer);
+    usleep(rand() % 1000 );
     printf("Thread %ld de leitura leu a nota %d\n", tid, notaLida);
 
 
@@ -41,11 +47,15 @@ void *leitor(void *t) {
 void *escritor(void *t) {
     long tid = (long)t;
 
+    pthread_mutex_lock(&mutex);
+    writers--;
+    pthread_mutex_unlock(&mutex);
+
     printf("%sThread %ld de escrita esperando para escrever %s\n", KGRN,tid, KWHT);
 
 
     printf("%sThread %ld de escrita escrevendo a nota\n %s",KGRN, tid, KWHT);
-    usleep(rand() % 1000 );
+    usleep(rand() % 2000 );
     sem_wait(&writer);
     int notaAtual = registro.nota;
     printf("%sThread %ld de escrita leu a nota %d %s\n",KGRN, tid, notaAtual, KWHT);
@@ -59,6 +69,11 @@ void *escritor(void *t) {
 
 
     printf("%sThread %ld acabou %s\n",KGRN, tid, KWHT);
+
+    pthread_mutex_lock(&mutex);
+    writers++;
+    pthread_cond_broadcast(&withoutWriter);
+    pthread_mutex_unlock(&mutex);
     return NULL;
 }
 
